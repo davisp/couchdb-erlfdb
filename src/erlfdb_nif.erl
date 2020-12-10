@@ -57,7 +57,9 @@
     transaction_get_approximate_size/1,
 
     get_error/1,
-    error_predicate/2
+    error_predicate/2,
+
+    get_metrics/0
 ]).
 
 
@@ -449,6 +451,9 @@ get_error(Error) ->
 error_predicate(Predicate, Error) ->
     erlfdb_error_predicate(Predicate, Error).
 
+-spec get_metrics() -> [{atom(), non_neg_integer()}].
+get_metrics() ->
+    erlfdb_get_metrics().
 
 -spec option_val_to_binary(binary() | integer()) -> binary().
 option_val_to_binary(Val) when is_binary(Val) ->
@@ -595,3 +600,4 @@ erlfdb_transaction_get_approximate_size(_Transaction) -> ?NOT_LOADED.
 % Misc
 erlfdb_get_error(_Error) -> ?NOT_LOADED.
 erlfdb_error_predicate(_Predicate, _Error) -> ?NOT_LOADED.
+erlfdb_get_metrics() -> ?NOT_LOADED.

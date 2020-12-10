@@ -10,6 +10,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include "metrics.h"
 #include "resources.h"
 
 
@@ -74,6 +75,8 @@ erlfdb_future_dtor(ErlNifEnv* env, void* obj)
     if(f->msg_env != NULL) {
         enif_free_env(f->msg_env);
     }
+
+    erlfdb_future_destroyed();
 }
 
 

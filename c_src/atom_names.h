@@ -143,3 +143,9 @@ ATOM_MAP(write);
 ATOM_MAP(retryable);
 ATOM_MAP(maybe_committed);
 ATOM_MAP(retryable_not_committed);
+
+// Metrics
+ATOM_MAP(futures_created);
+ATOM_MAP(futures_destroyed);
+ATOM_MAP(futures_fired);
+ATOM_MAP(futures_read);

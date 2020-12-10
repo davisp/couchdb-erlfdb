@@ -18,6 +18,7 @@
 #include "fdb.h"
 
 #include "atoms.h"
+#include "metrics.h"
 #include "resources.h"
 #include "util.h"
 
@@ -95,6 +96,8 @@ erlfdb_future_cb(FDBFuture* fdb_future, void* data)
 
     enif_release_resource(future);
 
+    erlfdb_future_fired();
+
     return;
 }
 
@@ -159,6 +162,8 @@ erlfdb_create_future(ErlNifEnv* env, FDBFuture* future, ErlFDBFutureType ftype)
     // thread has a reference. If its 1 then only
     // Erlang has a reference.
 
+    erlfdb_future_created();
+
     return T3(env, ATOM_erlfdb_future, ref, ret);
 }
 
@@ -172,6 +177,8 @@ erlfdb_future_get_void(ErlNifEnv* env, ErlFDBFuture* f)
     if(err != 0) {
         return erlfdb_erlang_error(env, err);
     }
+
+    erlfdb_future_read();
 
     return ATOM_ok;
 }
@@ -190,6 +197,8 @@ erlfdb_future_get_int64(ErlNifEnv* env, ErlFDBFuture* f)
     }
 
     nif_res = fdb_res;
+
+    erlfdb_future_read();
 
     return enif_make_int64(env, nif_res);
 }
@@ -211,6 +220,8 @@ erlfdb_future_get_key(ErlNifEnv* env, ErlFDBFuture* f)
 
     buf = enif_make_new_binary(env, len, &ret);
     memcpy(buf, key, len);
+
+    erlfdb_future_read();
 
     return ret;
 }
@@ -237,6 +248,8 @@ erlfdb_future_get_value(ErlNifEnv* env, ErlFDBFuture* f)
 
     buf = enif_make_new_binary(env, len, &ret);
     memcpy(buf, val, len);
+
+    erlfdb_future_read();
 
     return ret;
 }
@@ -265,6 +278,8 @@ erlfdb_future_get_string_array(ErlNifEnv* env, ErlFDBFuture* f)
         memcpy(buf, strings[i], strlen(strings[i]));
         ret = enif_make_list_cell(env, bin, ret);
     }
+
+    erlfdb_future_read();
 
     return ret;
 }
@@ -297,6 +312,8 @@ erlfdb_future_get_keyvalue_array(ErlNifEnv* env, ErlFDBFuture* f)
         memcpy(buf, kvs[i].value, kvs[i].value_length);
         ret = enif_make_list_cell(env, T2(env, key, val), ret);
     }
+
+    erlfdb_future_read();
 
     if(more) {
         return T3(env, ret, enif_make_int(env, count), ATOM_true);
@@ -2145,6 +2162,23 @@ erlfdb_error_predicate(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     }
 }
 
+static ERL_NIF_TERM
+erlfdb_get_metrics(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    ERL_NIF_TERM metrics[4];
+
+    ERL_NIF_TERM created = enif_make_uint64(env, erlfdb_num_futures_created());
+    ERL_NIF_TERM destroyed = enif_make_uint64(env, erlfdb_num_futures_destroyed());
+    ERL_NIF_TERM fired = enif_make_uint64(env, erlfdb_num_futures_fired());
+    ERL_NIF_TERM read = enif_make_uint64(env, erlfdb_num_futures_read());
+
+    metrics[0] = T2(env, ATOM_futures_created, created);
+    metrics[1] = T2(env, ATOM_futures_destroyed, destroyed);
+    metrics[2] = T2(env, ATOM_futures_fired, fired);
+    metrics[3] = T2(env, ATOM_futures_read, read);
+
+    return enif_make_list_from_array(env, metrics, 4);
+}
 
 #define NIF_FUNC(name, arity) {#name, arity, name}
 static ErlNifFunc funcs[] =
@@ -2192,7 +2226,9 @@ static ErlNifFunc funcs[] =
     NIF_FUNC(erlfdb_transaction_get_writes_allowed, 1),
 
     NIF_FUNC(erlfdb_get_error, 1),
-    NIF_FUNC(erlfdb_error_predicate, 2)
+    NIF_FUNC(erlfdb_error_predicate, 2),
+
+    NIF_FUNC(erlfdb_get_metrics, 0)
 };
 #undef NIF_FUNC
 
